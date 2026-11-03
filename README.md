@@ -83,7 +83,7 @@ to put a preview query in the editor. Run that query to see its rows.
   after 5 seconds; use Reset to recreate the worker and sample database afterward.
 - Earlier statements in a batch remain applied if a later statement fails. Use
   SQL transactions explicitly when you want transactional batches.
-- This is session-only: reload/reset discards edits. Persistence is Phase 3.
+- Phase 3 adds browser persistence; see below.
 - Browser worker isolation and a timeout are safeguards, not a hard memory quota.
   Excessively large queries can still exhaust browser resources.
 
@@ -96,3 +96,48 @@ npm run preview
 The production files are generated in `web/dist/`; no backend is required.
 The SQLite WASM asset is bundled locally. Google Fonts are optional and have
 system-font fallbacks. Browser database files are not shared with `sample.db`.
+
+
+## Phase 3 — Persistent workspaces, saved queries and history
+
+The React app now uses IndexedDB (`sql-playground`, version 1) to store workspaces
+on this browser/device. No account or backend setup is required. Application
+metadata is never stored in the SQLite database where playground SQL executes.
+
+Each workspace record contains:
+
+| Field | Purpose |
+| --- | --- |
+| `id`, `name`, `updatedAt` | Workspace identity and last save time |
+| `bytes` | Snapshot of its isolated SQLite database |
+| `sql` | Editor draft, saved after a 300 ms pause |
+| `saved` | Named reusable queries (`id`, `name`, `sql`) |
+| `history` | Latest 100 attempts (`id`, `sql`, `at`, `error`, `elapsed`) |
+
+Use **New**, **Rename**, and the workspace selector to manage independent databases.
+Each new workspace starts with the Instagram sample dataset. **Delete** removes
+that workspace and its database, saved queries and history; the last workspace
+cannot be deleted. **Reset database** restores the sample tables while preserving
+saved queries and history. **Reopen saved database** recovers after a timed-out
+worker without resetting to sample data.
+
+Enter a name below the results and click **Save query**. Click a saved query or
+history entry to load its SQL into the editor; it does not execute automatically.
+Saving an existing name asks before replacing it. Saved queries can be deleted;
+query history can be cleared per workspace. Failed and timed-out runs are recorded.
+
+Database snapshots save after each completed execution, including earlier committed
+statements when a later statement fails. Complete explicit transactions within one
+Run (BEGIN ... COMMIT); open transactions are not preserved by snapshot export.
+Timed-out operations revert to the last completed snapshot when reopened. Editor
+text and library actions are saved separately. Failed storage writes show a visible
+error with **Retry save**; unsaved edits may be lost if the page is closed.
+
+Storage is scoped to the site's origin. Changing ports or browsers creates a separate
+store; clearing site data removes it. Private browsing may restrict retention. This
+MVP supports one active editing tab per origin; simultaneous tabs can overwrite each
+other's workspace snapshots. Cross-device sync, accounts, and conflict resolution
+remain future work.
+
+`npm test` in `web/` includes IndexedDB close/reopen tests, database snapshot recovery,
+workspace isolation, saved-query/history persistence, history bounds, and failure handling.
