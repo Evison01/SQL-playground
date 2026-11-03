@@ -7,3 +7,8 @@ __pycache__/
 .venv/
 node_modules/
 web/dist/
+
+dist/
+.sites-runtime/
+.sites-checkout*/
+.DS_Store

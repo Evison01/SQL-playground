@@ -1,0 +1,13 @@
+{
+  "name": "sql-playground-release",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "setup": "npm --prefix web ci",
+    "dev": "npm --prefix web run dev",
+    "test": "npm --prefix web test",
+    "build": "npm --prefix web run build && node scripts/build.mjs",
+    "preview": "npm --prefix web run preview"
+  },
+  "engines": {"node": ">=22.12.0"}
+}
