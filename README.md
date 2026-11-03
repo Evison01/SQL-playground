@@ -53,3 +53,46 @@ python3 -m unittest discover -s tests -v
 Tests cover seeding, persistence, parameter binding, aggregation, CRUD, empty
 results, SQL errors, constraint rollback, connection cleanup, and CLI JSON/exit
 codes. GitHub Actions runs the suite on Python 3.9, 3.12, and 3.13.
+
+## Phase 2 — React SQL Playground
+
+The `web/` app is a React + Vite SQL editor. It runs a separate, disposable
+SQLite database inside a browser Web Worker using sql.js/WebAssembly. No SQL
+is sent to a backend, and the Phase 1 Python CLI remains available independently.
+The browser database is seeded with `users`, `posts`, and `comments`, linked by
+foreign keys. This is playground data, not application accounts.
+
+Requires Node.js 20.19+ or 22.12+.
+
+```sh
+cd web
+npm ci
+npm run dev
+```
+
+Open the URL printed by Vite. Write SQL, then click **Run query** or press
+**Cmd/Ctrl+Enter**. Examples demonstrate selection, joins, and grouping. The
+explorer shows tables, columns, types, and primary keys; click a table's arrow
+to put a preview query in the editor. Run that query to see its rows.
+
+- CREATE, INSERT, UPDATE, DELETE, SELECT, joins and multi-statement batches work.
+- Each statement gets its own results or affected-row count. Empty SELECTs retain
+  headers, NULL is labeled, and SQL errors appear inline.
+- The explorer refreshes after execution, including schema changes.
+- Results are capped at 500 displayed rows per statement. Queries are terminated
+  after 5 seconds; use Reset to recreate the worker and sample database afterward.
+- Earlier statements in a batch remain applied if a later statement fails. Use
+  SQL transactions explicitly when you want transactional batches.
+- This is session-only: reload/reset discards edits. Persistence is Phase 3.
+- Browser worker isolation and a timeout are safeguards, not a hard memory quota.
+  Excessively large queries can still exhaust browser resources.
+
+```sh
+npm test
+npm run build
+npm run preview
+```
+
+The production files are generated in `web/dist/`; no backend is required.
+The SQLite WASM asset is bundled locally. Google Fonts are optional and have
+system-font fallbacks. Browser database files are not shared with `sample.db`.
